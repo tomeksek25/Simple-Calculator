@@ -1,0 +1,186 @@
+import java.util.Scanner
+import scala.collection.mutable.ListBuffer
+import scala.util.control.Breaks._
+
+object Calculator {
+    def main(args: Array[String]) {
+        val controller = new Controller()
+        controller.start()
+    }
+}
+
+class Controller extends Memory{
+    
+    
+    def start() {
+        val scanner = new Scanner(System.in)
+        val memory = new Memory()
+        val methods = new Methods()
+        println("Welcome to simple Calculator in Scala project!")
+        println("You can use operators like \"+\" \"-\" \"*\" \"/\" here!")
+        println("Please type \"exit\" to quit the program")
+        println("Type set to set some variables")
+        println("Type help to get some help and examples!")
+        
+        
+        while(scanner.hasNext()) {
+            var input = scanner.next()
+            if (input == "exit") {
+                println("Bye!")
+                System.exit(0)
+            } else if (input == "help") {
+                println("Program returns sum of numbers or variables.")
+                println("Type \"set\" to set variables.")
+                println("Type \"exit\" to quit the program")
+                println("Example: 2 + 5 - 10 * 2 - n * 8 ------ x * 12 + 10")
+            } else if (input == "set") {
+                println("Please enter variables with values (for example x = 5). \nType \"back\" to get back")
+                breakable{
+                    while (scanner.hasNext()) {
+                        var varName = scanner.next()
+                        if (varName == "back") {
+                            break
+                        } else if (scanner.hasNext() && scanner.next() == "=" ) {
+                            var varValue = ""
+                            try {
+                                varValue = scanner.next()
+                                memory.setVariable(varName, varValue.toDouble)
+                            } catch {
+                                case e: Throwable => {
+                                    if (memory.isInMemory(varValue)) {
+                                        memory.setVariable(varName, memory.getVariableValue(varValue))
+                                    } else {
+                                        println("Invalid assigment")
+                                        System.exit(0)
+                                    }
+                                }
+                            }
+                        } else {
+                            println("Invalid assigment")
+                            System.exit(0)
+                        }
+                    }
+                }
+            } else {
+                var flag = false
+                var sign = '+'
+                
+                while(scanner.hasNext()){
+                    if (flag) {
+                        try {
+                            sign = methods.interpretSign(input)
+                            input = scanner.next()
+                            flag = false
+                        } catch {
+                            case e: Throwable => println("Invalid expression")
+                            System.exit(0)
+                        }
+                    } else {
+                        var value: Double = 0
+                        if (memory.isInMemory(input)) {
+                            value = memory.getVariableValue(input)
+                        } else {
+                            try {
+                                value = input.toInt
+                            } catch {
+                                case e: Throwable => println("Invalid expression")
+                                System.exit(0)
+                            }
+                        }
+                        if (scanner.hasNext()) {
+                            input = scanner.next()
+                            breakable {
+                                while(true) {
+                                    if (scanner.hasNext() && (input == "*" || input == "/" )) {
+                                
+                                        try {
+
+                                            input match {
+                                                case "*" => value = value * scanner.next().toDouble
+                                                case "/" => value = value / scanner.next().toDouble
+                                            }
+                                        } catch {
+                                            case e: Throwable => println("Invalid expression")
+                                            System.exit(0)
+                                        }
+                                        if(scanner.hasNext()) input = scanner.next()
+                                    } else {
+                                        if (sign == '+') {
+                                            memory.add(value)
+                                        } else {
+                                            memory.substract(value)
+                                        }
+                                        value = 0
+                                        break
+                                    }
+                                }
+                            }
+                        }
+                        flag = true
+                    }
+                }
+
+            }
+            
+        }
+        println("The result of your calculation is " + memory.getSum())
+    }
+}
+
+class Methods {
+
+    
+    def interpretSign(sign: String): Char = {
+
+        var signArray = sign.toCharArray()
+        var plus, minus: Int = 0;
+        for(char <- signArray) {
+            if (char == '+') {
+                plus += 1
+            } else if (char == '-') {
+                minus += 1
+            } else {
+                throw new IllegalArgumentException("Not a sign")
+            }
+        }
+           
+        if (plus > 0 && minus > 0) {
+            throw new IllegalArgumentException("Not a sign")
+        } else if (signArray(0) == '+' || minus % 2 == 0) {
+            return '+'
+        } else {
+            return '-'
+        }
+    }
+
+    
+}
+
+class Memory{
+    private var sum: Double = 0;
+    private var variables = scala.collection.mutable.Map[String, Double]()
+    
+    def getSum(): Double = sum;
+    def setSum(newSum: Double): Unit = {sum = newSum}
+    def isInMemory(key: String): Boolean = {
+        for((k,v) <- variables) {
+            if (key == k) {
+                return true
+            }
+        }
+        return false
+    }
+    def getVariableValue(key: String): Double = variables(key);
+    
+    def setVariable(key: String, value: Double): Unit = {
+        variables += (key -> value)
+    }
+    def add(x: Double) = {
+        setSum(getSum() + x)
+    }
+    def substract(x: Double) = {
+        setSum(getSum() - x)
+    }
+    
+
+}
